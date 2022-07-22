@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/textViewSvcUuid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/service_uuid"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.033"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/editTextSvcUuid"
+        android:layout_width="378dp"
+        android:layout_height="54dp"
+        android:ems="10"
+        android:hint="@string/uuid_sample"
+        android:importantForAutofill="no"
+        android:inputType="textPersonName"
+        android:minHeight="64dp"
+        android:text="@string/ama_uuid"
+        android:textColorHint="#757575"
+        android:textSize="12sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.407"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewSvcUuid" />
+
+    <Button
+        android:id="@+id/buttonConnect"
+        android:layout_width="180dp"
+        android:layout_height="48dp"
+        android:text="@string/btn_connect"
+        android:textSize="10sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.937"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/spinnerPairedDev" />
+
+    <EditText
+        android:id="@+id/editTextMultiLineInfo"
+        android:layout_width="388dp"
+        android:layout_height="501dp"
+        android:layout_marginStart="12dp"
+        android:editable="false"
+        android:ems="10"
+        android:enabled="false"
+        android:gravity="start|top"
+        android:importantForAutofill="no"
+        android:inputType="textMultiLine|text"
+        android:isScrollContainer="true"
+        android:singleLine="false"
+        android:textSize="10sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/buttonConnect"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+    <TextView
+        android:id="@+id/textViewPairedDev"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="@string/paired_device"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.036"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/editTextSvcUuid" />
+
+    <Spinner
+        android:id="@+id/spinnerPairedDev"
+        android:layout_width="372dp"
+        android:layout_height="54dp"
+        android:layout_marginStart="16dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewPairedDev"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+    <Button
+        android:id="@+id/buttonScan"
+        android:layout_width="180dp"
+        android:layout_height="48dp"
+        android:text="@string/btn_scan"
+        android:textSize="10sp"
+        app:layout_constraintBottom_toTopOf="@+id/editTextMultiLineInfo"
+        app:layout_constraintEnd_toStartOf="@+id/buttonConnect"
+        app:layout_constraintHorizontal_bias="0.87"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/spinnerPairedDev"
+        app:layout_constraintVertical_bias="0.0" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="service_uuid">Service UUID</string>
+    <string name="uuid_sample">xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</string>
+    <string name="btn_connect">Connect</string>
+    <string name="ama_uuid">931C7E8A-540F-4686-B798-E8DF0A2AD9F7</string>
+</resources>
