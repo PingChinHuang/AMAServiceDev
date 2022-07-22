@@ -1,0 +1,114 @@
+// ***************************
+// *** AMAZON CONFIDENTIAL ***
+// ***************************
+//
+// Copyright 2017 - 2018 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+//
+// You may not use this file except in compliance with the terms and conditions set forth in the accompanying LICENSE file.
+//
+// THESE MATERIALS ARE PROVIDED ON AN "AS IS" BASIS.  AMAZON SPECIFICALLY DISCLAIMS, WITH RESPECT TO THESE MATERIALS,
+// ALL WARRANTIES, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+// PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+syntax = "proto3";
+
+option java_package = "com.amazon.alexa.accessory.protocol";
+option java_generate_equals_and_hash = true;
+option objc_class_prefix = "AAC"; // Amazon Alexa Accessory
+option optimize_for = LITE_RUNTIME;
+
+import "common.proto";
+import "system.proto";
+import "transport.proto";
+import "speech.proto";
+import "calling.proto";
+import "central.proto";
+import "device.proto";
+import "media.proto";
+import "state.proto";
+
+enum Command {
+    NONE = 0;
+    RESET_CONNECTION = 51;
+    SYNCHRONIZE_SETTINGS = 50;
+    KEEP_ALIVE = 55;
+    REMOVE_DEVICE = 56;
+    GET_LOCALES = 57;
+    SET_LOCALE = 58;
+    LAUNCH_APP = 59;
+    UPGRADE_TRANSPORT = 30;
+    SWITCH_TRANSPORT = 31;
+    START_SPEECH = 11;
+    PROVIDE_SPEECH = 10;
+    STOP_SPEECH = 12;
+    ENDPOINT_SPEECH = 13;
+    NOTIFY_SPEECH_STATE = 14;
+    FORWARD_AT_COMMAND = 40;
+    INCOMING_CALL = 41;
+    GET_CENTRAL_INFORMATION = 103;
+    GET_DEVICE_INFORMATION = 20;
+    GET_DEVICE_CONFIGURATION = 21;
+    OVERRIDE_ASSISTANT = 22;
+    START_SETUP = 23;
+    COMPLETE_SETUP = 24;
+    NOTIFY_DEVICE_CONFIGURATION = 25;
+    UPDATE_DEVICE_INFORMATION = 26;
+    NOTIFY_DEVICE_INFORMATION = 27;
+    GET_DEVICE_FEATURES = 28;
+    ISSUE_MEDIA_CONTROL = 60;
+    GET_STATE = 100;
+    SET_STATE = 101;
+    SYNCHRONIZE_STATE = 102;
+}
+
+message Response {
+    ErrorCode error_code = 1;
+    oneof payload {
+        Locales locales = 21;
+        ConnectionDetails connection_details = 8;
+        Dialog dialog = 14;
+        SpeechProvider speech_provider = 15;
+        CentralInformation central_information = 13;
+        DeviceInformation device_information = 3;
+        DeviceConfiguration device_configuration = 10;
+        DeviceFeatures device_features = 28;
+        State state = 7;
+    }
+}
+
+message ControlEnvelope {
+    Command command = 1;
+    oneof payload {
+        Response response = 9;
+        ResetConnection reset_connection = 51;
+        SynchronizeSettings synchronize_settings = 50;
+        KeepAlive keep_alive = 55;
+        RemoveDevice remove_device = 56;
+        GetLocales get_locales = 57;
+        SetLocale set_locale = 58;
+        LaunchApp launch_app = 59;
+        UpgradeTransport upgrade_transport = 30;
+        SwitchTransport switch_transport = 31;
+        StartSpeech start_speech = 11;
+        ProvideSpeech provide_speech = 10;
+        StopSpeech stop_speech = 12;
+        EndpointSpeech endpoint_speech = 13;
+        NotifySpeechState notify_speech_state = 14;
+        ForwardATCommand forward_at_command = 40;
+        IncomingCall incoming_call = 41;
+        GetCentralInformation get_central_information = 103;
+        GetDeviceInformation get_device_information = 20;
+        GetDeviceConfiguration get_device_configuration = 21;
+        OverrideAssistant override_assistant = 22;
+        StartSetup start_setup = 23;
+        CompleteSetup complete_setup = 24;
+        NotifyDeviceConfiguration notify_device_configuration = 25;
+        UpdateDeviceInformation update_device_information = 26;
+        NotifyDeviceInformation notify_device_information = 27;
+        GetDeviceFeatures get_device_features = 28;
+        IssueMediaControl issue_media_control = 60;
+        GetState get_state = 100;
+        SetState set_state = 101;
+        SynchronizeState synchronize_state = 102;
+    }
+}

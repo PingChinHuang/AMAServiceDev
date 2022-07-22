@@ -1,0 +1,118 @@
+// ***************************
+// *** AMAZON CONFIDENTIAL ***
+// ***************************
+//
+// Copyright 2017 - 2018 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+//
+// You may not use this file except in compliance with the terms and conditions set forth in the accompanying LICENSE file.
+//
+// THESE MATERIALS ARE PROVIDED ON AN "AS IS" BASIS.  AMAZON SPECIFICALLY DISCLAIMS, WITH RESPECT TO THESE MATERIALS,
+// ALL WARRANTIES, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+// PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+syntax = "proto3";
+
+option java_package = "com.amazon.alexa.accessory.protocol";
+option java_generate_equals_and_hash = true;
+option objc_class_prefix = "AAC"; // Amazon Alexa Accessory
+option optimize_for = LITE_RUNTIME;
+
+import "common.proto";
+
+import "speech.proto";
+
+message DeviceBattery {
+    enum Status {
+        UNKNOWN = 0;
+        CHARGING = 1;
+        DISCHARGING = 2;
+        FULL = 3;
+    }
+    uint32 level = 1;
+    uint32 scale = 2;
+    Status status = 3;
+}
+
+enum ConnectionStatus {
+    CONNECTION_STATUS_UNKNOWN = 0;
+    CONNECTION_STATUS_CONNECTED = 1;
+    CONNECTION_STATUS_DISCONNECTED = 2;
+}
+
+enum DevicePresence {
+    DEVICE_PRESENCE_UNKNOWN = 0;
+    DEVICE_PRESENCE_ACTIVE = 1;
+    DEVICE_PRESENCE_INACTIVE = 2;
+    DEVICE_PRESENCE_ACCESSIBLE = 3;
+}
+
+message DeviceStatus {
+    ConnectionStatus link = 1;
+    ConnectionStatus nfmi = 2;
+    DevicePresence presence = 3;
+}
+
+message DeviceInformation {
+    string serial_number = 1;
+    string name = 2;
+    repeated Transport supported_transports = 3;
+    string device_type = 4;
+    uint32 device_id = 5;
+    DeviceBattery battery = 6;
+    DeviceStatus status = 7;
+    uint32 product_color = 8;
+    repeated uint32 associated_devices = 9;
+    repeated SpeechInitiationType supported_speech_initiations = 10;
+    repeated string supported_wakewords = 11;
+    map<string, string> metadata = 12;
+}
+
+message GetDeviceInformation {
+    uint32 device_id = 1;
+}
+
+message DeviceConfiguration {
+    bool needs_assistant_override = 1;
+    bool needs_setup = 2;
+}
+
+message GetDeviceConfiguration {
+}
+
+message OverrideAssistant {
+    ErrorCode error_code = 1;
+}
+
+message StartSetup {
+}
+
+message CompleteSetup {
+    ErrorCode error_code = 1;
+}
+
+message NotifyDeviceConfiguration {
+    DeviceConfiguration device_configuration = 1;
+}
+
+message UpdateDeviceInformation {
+    string name = 1;
+    uint32 device_id = 2;
+}
+
+message NotifyDeviceInformation {
+    DeviceInformation device_information = 1;
+}
+
+message FeatureProperties {
+    uint32 feature_id = 1;
+    uint32 envelope_version = 2;
+}
+
+message DeviceFeatures {
+    uint32 features = 1;
+    uint32 device_attributes = 2;
+    repeated FeatureProperties feature_properties = 3;
+}
+
+message GetDeviceFeatures {
+}

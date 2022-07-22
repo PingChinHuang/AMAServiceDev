@@ -1,0 +1,20 @@
+// ***************************
+// *** AMAZON CONFIDENTIAL ***
+// ***************************
+//
+// Copyright 2017 - 2018 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+//
+// You may not use this file except in compliance with the terms and conditions set forth in the accompanying LICENSE file.
+//
+// THESE MATERIALS ARE PROVIDED ON AN "AS IS" BASIS.  AMAZON SPECIFICALLY DISCLAIMS, WITH RESPECT TO THESE MATERIALS,
+// ALL WARRANTIES, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+// PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+DeviceInformation.serial_number max_size:20
+DeviceInformation.name max_size:20
+DeviceInformation.supported_transports max_count:4
+DeviceInformation.device_type max_size:20
+DeviceInformation.associated_devices max_count:16
+DeviceInformation.supported_speech_initiations max_count:5
+DeviceInformation.supported_wakewords max_size:16 max_count:5
+DeviceFeatures.feature_properties max_count:8

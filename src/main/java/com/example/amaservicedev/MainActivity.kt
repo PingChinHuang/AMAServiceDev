@@ -21,6 +21,7 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
+import com.amazon.alexa.accessory.protocol.Accessories
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -145,7 +146,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 //                        }
             }
         }
-        if (mmSocket.isConnected) {
+        if (this::mmSocket.isInitialized && mmSocket.isConnected) {
             mmSocket.close()
         }
     }

@@ -1,0 +1,102 @@
+// ***************************
+// *** AMAZON CONFIDENTIAL ***
+// ***************************
+//
+// Copyright 2017 - 2018 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+//
+// You may not use this file except in compliance with the terms and conditions set forth in the accompanying LICENSE file.
+//
+// THESE MATERIALS ARE PROVIDED ON AN "AS IS" BASIS.  AMAZON SPECIFICALLY DISCLAIMS, WITH RESPECT TO THESE MATERIALS,
+// ALL WARRANTIES, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+// PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+syntax = "proto3";
+
+option java_package = "com.amazon.alexa.accessory.protocol";
+option java_generate_equals_and_hash = true;
+option objc_class_prefix = "AAC"; // Amazon Alexa Accessory
+option optimize_for = LITE_RUNTIME;
+
+import "common.proto";
+
+message Dialog {
+    uint32 id = 1;
+}
+
+enum AudioProfile {
+    CLOSE_TALK = 0;
+    NEAR_FIELD = 1;
+    FAR_FIELD = 2;
+}
+
+enum AudioFormat {
+    PCM_L16_16KHZ_MONO = 0;
+    OPUS_16KHZ_32KBPS_CBR_0_20MS = 1;
+    OPUS_16KHZ_16KBPS_CBR_0_20MS = 2;
+    MSBC = 3;
+}
+
+enum AudioSource {
+    STREAM = 0;
+    BLUETOOTH_SCO = 1;
+}
+
+message SpeechSettings {
+    AudioProfile audio_profile = 1;
+    AudioFormat audio_format = 2;
+    AudioSource audio_source = 3;
+}
+
+message SpeechInitiator {
+    enum Type {
+        NONE = 0;
+        PRESS_AND_HOLD = 1;
+        TAP = 3;
+        WAKEWORD = 4;
+    }
+    message WakeWord {
+        uint32 start_index_in_samples = 1;
+        uint32 end_index_in_samples = 2;
+        bool near_miss = 3;
+        bytes metadata = 4;
+    }
+    Type type = 1;
+    WakeWord wake_word = 2;
+}
+
+message StartSpeech {
+    SpeechSettings settings = 1;
+    SpeechInitiator initiator = 2;
+    Dialog dialog = 3;
+    bool suppressEndpointEarcon = 4;
+    bool suppressStartEarcon = 5;
+}
+
+message SpeechProvider {
+    SpeechSettings speech_settings = 1;
+    Dialog dialog = 2;
+}
+
+message ProvideSpeech {
+    Dialog dialog = 1;
+}
+
+message StopSpeech {
+    ErrorCode error_code = 1;
+    Dialog dialog = 2;
+}
+
+message EndpointSpeech {
+    Dialog dialog = 1;
+}
+
+enum SpeechState {
+    IDLE = 0;
+    LISTENING = 1;
+    PROCESSING = 2;
+    SPEAKING = 3;
+}
+
+message NotifySpeechState {
+    SpeechState state = 1;
+}

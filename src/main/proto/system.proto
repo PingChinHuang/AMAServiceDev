@@ -1,0 +1,59 @@
+// ***************************
+// *** AMAZON CONFIDENTIAL ***
+// ***************************
+//
+// Copyright 2017 - 2018 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+//
+// You may not use this file except in compliance with the terms and conditions set forth in the accompanying LICENSE file.
+//
+// THESE MATERIALS ARE PROVIDED ON AN "AS IS" BASIS.  AMAZON SPECIFICALLY DISCLAIMS, WITH RESPECT TO THESE MATERIALS,
+// ALL WARRANTIES, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+// PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+syntax = "proto3";
+
+option java_package = "com.amazon.alexa.accessory.protocol";
+option java_generate_equals_and_hash = true;
+option objc_class_prefix = "AAC"; // Amazon Alexa Accessory
+option optimize_for = LITE_RUNTIME;
+
+message ResetConnection {
+    enum ResetReason {
+        UNKNOWN = 0;
+        AAP_REFUSED_MAX_CONNECTIONS_REACHED = 1;
+    }
+    uint32 timeout = 1;
+    bool force_disconnect = 2;
+    ResetReason reset_reason = 3;
+}
+
+message SynchronizeSettings {
+    uint32 timestamp_hi = 1;
+    uint32 timestamp_lo = 2;
+}
+
+message KeepAlive {
+}
+
+message RemoveDevice {
+}
+
+message Locale {
+    string name = 1;
+}
+
+message Locales {
+    repeated Locale supported_locales = 1;
+    Locale current_locale = 2;
+}
+
+message GetLocales {
+}
+
+message SetLocale {
+    Locale locale = 1;
+}
+
+message LaunchApp {
+    string app_id = 1;
+}

@@ -10,4 +10,6 @@
     <string name="btn_scan">Scan</string>
     <string name="btn_discovering">Discovering...</string>
     <string name="btn_connecting">Connecting...</string>
+    <string name="protocol">Protocol</string>
+    <string name="btn_send">Send</string>
 </resources>
