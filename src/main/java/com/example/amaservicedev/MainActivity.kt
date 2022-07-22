@@ -30,12 +30,13 @@ import java.util.*
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var btnConnect: Button
     private lateinit var btnScan: Button
+    private lateinit var btnSend: Button
     private lateinit var infoText: EditText
     private lateinit var uuidText: EditText
     private lateinit var btManager: BluetoothManager
     private lateinit var btAdapter: BluetoothAdapter
     private lateinit var devSpinner: Spinner
-    private lateinit var devList: List<BluetoothDevice>
+    private lateinit var devList: MutableList<BluetoothDevice>
     private lateinit var transferThread: TransferThread
     private lateinit var mmSocket: BluetoothSocket
     private val TAG: String = "AMAServiceDev"
@@ -46,7 +47,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         private val mmBuffer: ByteArray = ByteArray(1024) // mmBuffer store for the stream
         private var running: Boolean = true
 
-        public override fun run() {
+        override fun run() {
             var numBytes: Int // bytes returned from read()
 
             // Keep listening to the InputStream until an exception occurs.
@@ -131,6 +132,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         btnConnect.text = getString(R.string.btn_disconnect)
         btnConnect.isEnabled = true
         btnScan.isEnabled = false
+        btnSend.isEnabled = true
 
         transferThread = TransferThread(mmSocket)
         transferThread.start()
@@ -158,12 +160,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         btnConnect = findViewById(R.id.buttonConnect)
         btnScan = findViewById(R.id.buttonScan)
+        btnSend = findViewById(R.id.buttonSend)
         infoText = findViewById(R.id.editTextMultiLineInfo)
         uuidText = findViewById(R.id.editTextSvcUuid)
         btManager = getSystemService(android.bluetooth.BluetoothManager::class.java)
         btAdapter = btManager.adapter
         devSpinner = findViewById(R.id.spinnerPairedDev)
-        devList = listOf<BluetoothDevice>()
+        devList = mutableListOf()
 
         btnConnect.setOnClickListener {
             btnConnect.isEnabled = false
@@ -173,6 +176,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 btnConnect.text = getString(R.string.btn_connect)
                 btnConnect.isEnabled = true
                 btnScan.isEnabled = true
+                btnSend.isEnabled = false
                 return@setOnClickListener
             }
 
@@ -207,7 +211,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
 
         btnScan.setOnClickListener {
-            devList.toMutableList().clear()
+            devList.clear()
             val devNameList = arrayListOf<String>()
             devSpinner.adapter = ArrayAdapter(
                 this,
@@ -221,9 +225,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             startDevDiscovery()
         }
 
+        btnSend.setOnClickListener {
+
+        }
+
         checkPermission()
         devSpinner.isEnabled = false
         btnConnect.isEnabled = false
+        btnSend.isEnabled = false
 
         if (btAdapter.isEnabled) {
             showToastInfo("BT is on.")
@@ -254,7 +263,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     val device: BluetoothDevice? =
                         intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
                     if (device?.name != null) {
-                        devList += device
+                        devList.add(device)
                         val devNameList = arrayListOf<String>()
                         for (dev in devList) {
                             devNameList += dev.name

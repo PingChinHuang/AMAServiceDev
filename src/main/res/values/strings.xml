@@ -12,4 +12,7 @@
     <string name="btn_connecting">Connecting...</string>
     <string name="protocol">Protocol</string>
     <string name="btn_send">Send</string>
+    <string-array name="proto_msg">
+        <item>StartSetup</item>
+    </string-array>
 </resources>
