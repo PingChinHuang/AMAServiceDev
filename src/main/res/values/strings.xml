@@ -13,6 +13,8 @@
     <string name="protocol">Protocol</string>
     <string name="btn_send">Send</string>
     <string-array name="proto_msg">
-        <item>StartSetup</item>
+        <item>Start Setup</item>
+        <item>Complete Setup</item>
+        <item>Control Envelope</item>
     </string-array>
 </resources>

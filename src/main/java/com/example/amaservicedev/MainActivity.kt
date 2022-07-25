@@ -21,7 +21,14 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
+import androidx.datastore.core.CorruptionException
+import androidx.datastore.core.Serializer
 import com.amazon.alexa.accessory.protocol.Accessories
+import com.amazon.alexa.accessory.protocol.Common
+import com.amazon.alexa.accessory.protocol.Device.CompleteSetup
+import com.amazon.alexa.accessory.protocol.Device.StartSetup
+import com.google.protobuf.InvalidProtocolBufferException
+import kotlinx.coroutines.*
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -36,10 +43,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var btManager: BluetoothManager
     private lateinit var btAdapter: BluetoothAdapter
     private lateinit var devSpinner: Spinner
+    private lateinit var protocolSpinner: Spinner
     private lateinit var devList: MutableList<BluetoothDevice>
     private lateinit var transferThread: TransferThread
     private lateinit var mmSocket: BluetoothSocket
     private val TAG: String = "AMAServiceDev"
+
+    val scope = CoroutineScope(Job() + Dispatchers.Main)
 
     private inner class TransferThread(private val mmSocket: BluetoothSocket) : Thread() {
         private val mmInStream: InputStream = mmSocket.inputStream
@@ -142,10 +152,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         if (this@MainActivity::transferThread.isInitialized) {
             if (transferThread.isAlive) {
                 transferThread.cancel()
-//                        while (mmSocket.isConnected) {
-//                            Log.d(TAG,"Wait for finishing socket close.")
-//                            sleep(100)
-//                        }
             }
         }
         if (this::mmSocket.isInitialized && mmSocket.isConnected) {
@@ -166,6 +172,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         btManager = getSystemService(android.bluetooth.BluetoothManager::class.java)
         btAdapter = btManager.adapter
         devSpinner = findViewById(R.id.spinnerPairedDev)
+        protocolSpinner = findViewById(R.id.spinnerProtocol)
         devList = mutableListOf()
 
         btnConnect.setOnClickListener {
@@ -226,7 +233,58 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
 
         btnSend.setOnClickListener {
-
+            val selectedProtocol = protocolSpinner.selectedItemId.toInt()
+            when (selectedProtocol) {
+                0 -> {
+                    Log.d(TAG,"Start Setup")
+                    runBlocking {
+                        launch {
+                            Log.d(TAG, "Coroutine running...")
+                            val startSetup: StartSetup = StartSetup.newBuilder().build()
+                            val controlEnvelope: Accessories.ControlEnvelope =
+                                Accessories.ControlEnvelope.newBuilder()
+                                    .setCommand(Accessories.Command.START_SETUP)
+                                    .setStartSetup(startSetup)
+                                    .build()
+                            controlEnvelope.writeTo(mmSocket.outputStream)
+                            Log.d(TAG, "Coroutine finished. " + startSetup.toByteArray())
+                        }
+                    }
+                }
+                1 -> {
+                    Log.d(TAG,"Complete Setup")
+                    runBlocking {
+                        launch {
+                            Log.d(TAG, "Coroutine running...")
+                            val completeSetup: CompleteSetup =
+                                CompleteSetup.newBuilder().setErrorCode(Common.ErrorCode.SUCCESS).build()
+                            val controlEnvelope: Accessories.ControlEnvelope =
+                                Accessories.ControlEnvelope.newBuilder()
+                                    .setCommand(Accessories.Command.COMPLETE_SETUP)
+                                    .setCompleteSetup(completeSetup)
+                                    .build()
+                            controlEnvelope.writeTo(mmSocket.outputStream)
+                            Log.d(TAG, "Coroutine finished.")
+                        }
+                    }
+                }
+                2 -> {
+                    Log.d(TAG,"Control Envelope")
+                    runBlocking {
+                        launch {
+                            Log.d(TAG, "Coroutine running...")
+                            val startSetup: StartSetup = StartSetup.newBuilder().build()
+                            val controlEnvelope: Accessories.ControlEnvelope =
+                                Accessories.ControlEnvelope.newBuilder()
+                                    .setCommand(Accessories.Command.START_SETUP)
+                                    .setStartSetup(startSetup)
+                                    .build()
+                            controlEnvelope.writeTo(mmSocket.outputStream)
+                            Log.d(TAG, "Coroutine finished.")
+                        }
+                    }
+                }
+            }
         }
 
         checkPermission()
