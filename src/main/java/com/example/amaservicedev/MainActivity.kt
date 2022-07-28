@@ -31,6 +31,7 @@ import java.io.OutputStream
 import java.lang.NullPointerException
 import java.util.*
 
+@Suppress("BlockingMethodInNonBlockingContext")
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var btnConnect: Button
     private lateinit var btnScan: Button
@@ -44,9 +45,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var devList: MutableList<BluetoothDevice>
     private lateinit var transferThread: TransferThread
     private lateinit var mmSocket: BluetoothSocket
-    private val TAG: String = "AMAServiceDev"
-
-    val scope = CoroutineScope(Job() + Dispatchers.Main)
+    private val mmTAG: String = "AMAServiceDev"
 
     private val hexArray = "0123456789ABCDEF".toCharArray()
     private fun dumpByteArray(array: ByteArray, size: Int): String {
@@ -82,24 +81,24 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 numBytes = try {
                     mmInStream.read(mmBuffer)
                 } catch (e: IOException) {
-                    Log.d(TAG, e.message.toString())
-                    showMsg("${e.message.toString()}")
+                    Log.d(mmTAG, e.message.toString())
+                    showMsg(e.message.toString())
                     break
                 }
 
                 val buffer = mmBuffer.copyOfRange(0, numBytes)
-                Log.d(TAG, dumpByteArray(buffer, buffer.size))
+                Log.d(mmTAG, dumpByteArray(buffer, buffer.size))
                 try {
                     val response: Accessories.Response =
                         Accessories.Response.parseFrom(buffer)
-                    Log.d(TAG, "Response error code: ${response.errorCode}")
+                    Log.d(mmTAG, "Response error code: ${response.errorCode}")
                 } catch (e: InvalidProtocolBufferException) {
-                    Log.e(TAG, e.stackTraceToString())
+                    Log.e(mmTAG, e.stackTraceToString())
                 }
-                Log.d(TAG, "Read $numBytes...")
+                Log.d(mmTAG, "Read $numBytes...")
             }
 
-            Log.d(TAG, "loop break")
+            Log.d(mmTAG, "loop break")
         }
 
         // Call this from the main activity to send data to the remote device.
@@ -108,13 +107,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 mmOutStream.write(bytes)
                 mmOutStream.flush()
             } catch (e: IOException) {
-                Log.e(TAG, "Error occurred when sending data", e)
+                Log.e(mmTAG, "Error occurred when sending data", e)
                 return
             }
         }
 
         fun cancel() {
-            Log.d(TAG, "transferThread cancel")
+            Log.d(mmTAG, "transferThread cancel")
             running = false
             mmSocket.close()
         }
@@ -166,7 +165,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         mmSocket = device.let {
             val uuid: UUID = UUID.fromString(uuidText.text.toString())
-            Log.d(TAG, "Service UUID: $uuid")
+            Log.d(mmTAG, "Service UUID: $uuid")
             showMsg("Trying to create connection to $uuid")
             it.createRfcommSocketToServiceRecord(uuid)
         }
@@ -174,15 +173,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         try {
             mmSocket.connect()
         } catch (e: IOException) {
-            Log.d(TAG, e.message.toString())
-            showMsg("${e.message.toString()}")
+            Log.d(mmTAG, e.message.toString())
+            showMsg(e.message.toString())
             btnConnect.text = getString(R.string.btn_connect)
             btnConnect.isEnabled = true
             btnScan.isEnabled = true
             btnSend.isEnabled = false
             return
         }
-        Log.d(TAG, "Create RFCOMM connection successfully.")
+        Log.d(mmTAG, "Create RFCOMM connection successfully.")
         showMsg("Create RFCOMM connection successfully.")
         btnConnect.text = getString(R.string.btn_disconnect)
         btnConnect.isEnabled = true
@@ -209,17 +208,17 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         val numBytes = try {
             mmSocket.inputStream.read(mmBuffer)
         } catch (e: IOException) {
-            Log.d(TAG, e.message.toString())
+            Log.d(mmTAG, e.message.toString())
 //            showMsg(e.message.toString() + '\n')
         }
-        Log.d(TAG, "Read $numBytes...")
+        Log.d(mmTAG, "Read $numBytes...")
 
         val buffer = mmBuffer.copyOfRange(0, numBytes)
-        Log.d(TAG, dumpByteArray(buffer, buffer.size))
+        Log.d(mmTAG, dumpByteArray(buffer, buffer.size))
         val response: Accessories.Response? = try {
             Accessories.Response.parseFrom(buffer)
         } catch (e: InvalidProtocolBufferException) {
-            Log.e(TAG, e.message.toString())
+            Log.e(mmTAG, e.message.toString())
             null
         }
 
@@ -294,7 +293,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         btnSend.setOnClickListener {
             val selectedProtocol = protocolSpinner.selectedItemId.toInt()
-            showMsg("Protocol: ${protocolSpinner.selectedItem.toString()}")
+            showMsg("Protocol: ${protocolSpinner.selectedItem}")
             when (selectedProtocol) {
                 0 -> {
                     runBlocking {
@@ -347,18 +346,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                             try {
                                 if (response?.hasDeviceInformation()!!) {
                                     Log.d(
-                                        TAG,
+                                        mmTAG,
                                         "serial number: ${response.deviceInformation.serialNumber}"
                                     )
-                                    Log.d(TAG, "serial number: ${response.deviceInformation.name}")
+                                    Log.d(mmTAG, "serial number: ${response.deviceInformation.name}")
                                     Log.d(
-                                        TAG,
+                                        mmTAG,
                                         "serial number: ${response.deviceInformation.deviceType}"
                                     )
                                 }
                             } catch (e: NullPointerException) {
-                                Log.e(TAG, e.message.toString())
-                                showMsg("${e.message.toString()}")
+                                Log.e(mmTAG, e.message.toString())
+                                showMsg(e.message.toString())
                             }
                         }
                     }
