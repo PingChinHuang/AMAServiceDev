@@ -15,6 +15,7 @@
     <string-array name="proto_msg">
         <item>Start Setup</item>
         <item>Complete Setup</item>
-        <item>Control Envelope</item>
+        <item>Get Device Information</item>
+        <item>Get Device Configuration</item>
     </string-array>
 </resources>

@@ -3,10 +3,7 @@ package com.example.amaservicedev
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothSocket
+import android.bluetooth.*
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -21,10 +18,9 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
-import androidx.datastore.core.CorruptionException
-import androidx.datastore.core.Serializer
 import com.amazon.alexa.accessory.protocol.Accessories
 import com.amazon.alexa.accessory.protocol.Common
+import com.amazon.alexa.accessory.protocol.Device
 import com.amazon.alexa.accessory.protocol.Device.CompleteSetup
 import com.amazon.alexa.accessory.protocol.Device.StartSetup
 import com.google.protobuf.InvalidProtocolBufferException
@@ -32,6 +28,7 @@ import kotlinx.coroutines.*
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.lang.NullPointerException
 import java.util.*
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
@@ -51,6 +48,25 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     val scope = CoroutineScope(Job() + Dispatchers.Main)
 
+    private val hexArray = "0123456789ABCDEF".toCharArray()
+    private fun dumpByteArray(array: ByteArray, size: Int): String {
+        val hexChars = CharArray(size * 3)
+        for (j in array.indices) {
+            if (j >= size)
+                break
+
+            val v = array[j].toInt() and 0xFF
+
+            hexChars[j * 3] = hexArray[v ushr 4]
+            hexChars[j * 3 + 1] = hexArray[v and 0x0F]
+            if (j % 16 == 15 )
+                hexChars[j * 3 + 2] = '\n'
+            else
+                hexChars[j * 3 + 2] = ' '
+        }
+        return String(hexChars)
+    }
+
     private inner class TransferThread(private val mmSocket: BluetoothSocket) : Thread() {
         private val mmInStream: InputStream = mmSocket.inputStream
         private val mmOutStream: OutputStream = mmSocket.outputStream
@@ -58,7 +74,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         private var running: Boolean = true
 
         override fun run() {
-            var numBytes: Int // bytes returned from read()
+            var numBytes: Int// bytes returned from read()
 
             // Keep listening to the InputStream until an exception occurs.
             while (running) {
@@ -70,6 +86,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     break
                 }
 
+                val buffer = mmBuffer.copyOfRange(0, numBytes)
+                Log.d(TAG, dumpByteArray(buffer, buffer.size))
+                try {
+                    val response: Accessories.Response =
+                        Accessories.Response.parseFrom(buffer)
+                    Log.d(TAG, "Response error code: ${response.errorCode}")
+                } catch (e: InvalidProtocolBufferException) {
+                    Log.e(TAG, e.stackTraceToString())
+                }
                 Log.d(TAG, "Read $numBytes...")
             }
 
@@ -100,7 +125,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            infoText.getText().append("No permission (ACCESS_FINE_LOCATION)\n")
+            infoText.text.append("No permission (ACCESS_FINE_LOCATION)\n")
             ActivityCompat.requestPermissions(
                 this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 100
             )
@@ -119,6 +144,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         btnScan.text = getString(R.string.btn_discovering)
     }
 
+    @SuppressLint("MissingPermission")
+    private fun cancelDevDiscovery() {
+        btAdapter.cancelDiscovery()
+        btnScan.isEnabled = false
+        btnScan.text = getString(R.string.btn_scan)
+    }
+
     private fun showToastInfo(text: String) {
         Toast.makeText(this@MainActivity, text, Toast.LENGTH_LONG).show()
     }
@@ -129,23 +161,24 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         mmSocket = device.let {
             val uuid: UUID = UUID.fromString(uuidText.text.toString())
-            Log.d(TAG, "Service UUID: " + uuid.toString())
+            Log.d(TAG, "Service UUID: $uuid")
             it.createRfcommSocketToServiceRecord(uuid)
         }
 
         try {
             mmSocket.connect()
         } catch (e: IOException) {
-            Log.d(TAG, "Could not connect to remote device.", e)
+            Log.d(TAG, e.message.toString())
         }
-        Log.d(TAG, "Connect to remote device successfully.")
+        Log.d(TAG, "Successfully connect to remote device .")
         btnConnect.text = getString(R.string.btn_disconnect)
+        btnScan.text = getString(R.string.btn_scan)
         btnConnect.isEnabled = true
         btnScan.isEnabled = false
         btnSend.isEnabled = true
 
-        transferThread = TransferThread(mmSocket)
-        transferThread.start()
+//        transferThread = TransferThread(mmSocket)
+//        transferThread.start()
     }
 
     private fun disconnectDevice() {
@@ -157,6 +190,27 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         if (this::mmSocket.isInitialized && mmSocket.isConnected) {
             mmSocket.close()
         }
+    }
+
+    private fun recvProtocolMessage(): Accessories.Response? {
+        val mmBuffer = ByteArray(512)
+        val numBytes = try {
+            mmSocket.inputStream.read(mmBuffer)
+        } catch (e: IOException) {
+            Log.d(TAG, e.message.toString())
+        }
+        Log.d(TAG, "Read $numBytes...")
+
+        val buffer = mmBuffer.copyOfRange(0, numBytes)
+        Log.d(TAG, dumpByteArray(buffer, buffer.size))
+        val response: Accessories.Response? = try {
+            Accessories.Response.parseFrom(buffer)
+        } catch (e: InvalidProtocolBufferException) {
+            Log.e(TAG, e.message.toString())
+            null
+        }
+
+        return response
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
@@ -192,27 +246,22 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 return@setOnClickListener
             }
 
-            val uuid = uuidText.getText()
-            val newContent = infoText.getText().append(uuid)
-
             val selectedDevice = devSpinner.selectedItemId.toInt()
-            infoText.setText("$newContent\n$selectedDevice\n")
+            infoText.text.append("${uuidText.text}\n")
 
             // Cancel discovery because it otherwise slows down the connection.
             if (btAdapter.isDiscovering) {
-                btAdapter.cancelDiscovery()
-                btnScan.isEnabled = false
-                btnScan.text = getString(R.string.btn_scan)
+                cancelDevDiscovery()
             }
 
-            when (devList.get(selectedDevice).bondState) {
+            when (devList[selectedDevice].bondState) {
                 BluetoothDevice.BOND_BONDED -> {
-                    infoText.setText(infoText.text.append("Bonded\n"))
-                    connectDevice(devList.get(selectedDevice))
+                    infoText.text = infoText.text.append("Bonded\n")
+                    connectDevice(devList[selectedDevice])
                 }
                 BluetoothDevice.BOND_NONE -> {
-                    infoText.setText(infoText.text.append("None\n"))
-                    devList.get(selectedDevice).createBond()
+                    infoText.text = infoText.text.append("None\n")
+                    devList[selectedDevice].createBond()
                 }
             }
         }
@@ -227,19 +276,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             )
             devSpinner.isEnabled = false
             btnConnect.isEnabled = false
-            btnScan.isEnabled = false
-            btnScan.text = getString(R.string.btn_discovering)
             startDevDiscovery()
         }
 
         btnSend.setOnClickListener {
             val selectedProtocol = protocolSpinner.selectedItemId.toInt()
+            Log.d(TAG,"Protocol: " + protocolSpinner.selectedItem.toString())
             when (selectedProtocol) {
                 0 -> {
-                    Log.d(TAG,"Start Setup")
                     runBlocking {
                         launch {
-                            Log.d(TAG, "Coroutine running...")
                             val startSetup: StartSetup = StartSetup.newBuilder().build()
                             val controlEnvelope: Accessories.ControlEnvelope =
                                 Accessories.ControlEnvelope.newBuilder()
@@ -247,40 +293,76 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                                     .setStartSetup(startSetup)
                                     .build()
                             controlEnvelope.writeTo(mmSocket.outputStream)
-                            Log.d(TAG, "Coroutine finished. " + startSetup.toByteArray())
+
+                            val response = recvProtocolMessage()
+                            Log.d(TAG, "error code: ${response?.errorCode}")
                         }
                     }
                 }
                 1 -> {
-                    Log.d(TAG,"Complete Setup")
                     runBlocking {
                         launch {
-                            Log.d(TAG, "Coroutine running...")
                             val completeSetup: CompleteSetup =
-                                CompleteSetup.newBuilder().setErrorCode(Common.ErrorCode.SUCCESS).build()
+                                CompleteSetup.newBuilder().setErrorCode(Common.ErrorCode.NOT_FOUND).build()
                             val controlEnvelope: Accessories.ControlEnvelope =
                                 Accessories.ControlEnvelope.newBuilder()
                                     .setCommand(Accessories.Command.COMPLETE_SETUP)
                                     .setCompleteSetup(completeSetup)
                                     .build()
                             controlEnvelope.writeTo(mmSocket.outputStream)
-                            Log.d(TAG, "Coroutine finished.")
+
+                            val response = recvProtocolMessage()
+                            Log.d(TAG, "error code: ${response?.errorCode}")
                         }
                     }
                 }
                 2 -> {
-                    Log.d(TAG,"Control Envelope")
                     runBlocking {
                         launch {
-                            Log.d(TAG, "Coroutine running...")
-                            val startSetup: StartSetup = StartSetup.newBuilder().build()
+                            val getDevInfo: Device.GetDeviceInformation =
+                                Device.GetDeviceInformation.newBuilder()
+                                    .setDeviceId(0).build()
                             val controlEnvelope: Accessories.ControlEnvelope =
                                 Accessories.ControlEnvelope.newBuilder()
-                                    .setCommand(Accessories.Command.START_SETUP)
-                                    .setStartSetup(startSetup)
+                                    .setCommand(Accessories.Command.GET_DEVICE_INFORMATION)
+                                    .setGetDeviceInformation(getDevInfo)
                                     .build()
                             controlEnvelope.writeTo(mmSocket.outputStream)
-                            Log.d(TAG, "Coroutine finished.")
+
+                            val response = recvProtocolMessage()
+                            Log.d(TAG, "error code: ${response?.errorCode}")
+                            try {
+                                if (response?.hasDeviceInformation()!!) {
+                                    Log.d(
+                                        TAG,
+                                        "serial number: ${response.deviceInformation.serialNumber}"
+                                    )
+                                    Log.d(TAG, "serial number: ${response.deviceInformation.name}")
+                                    Log.d(
+                                        TAG,
+                                        "serial number: ${response.deviceInformation.deviceType}"
+                                    )
+                                }
+                            } catch (e: NullPointerException) {
+                                Log.e(TAG, e.message.toString())
+                            }
+                        }
+                    }
+                }
+                3 -> {
+                    runBlocking {
+                        launch {
+                            val getDevConfig: Device.GetDeviceConfiguration =
+                                Device.GetDeviceConfiguration.newBuilder().build()
+                            val controlEnvelope: Accessories.ControlEnvelope =
+                                Accessories.ControlEnvelope.newBuilder()
+                                    .setCommand(Accessories.Command.GET_DEVICE_CONFIGURATION)
+                                    .setGetDeviceConfiguration(getDevConfig)
+                                    .build()
+                            controlEnvelope.writeTo(mmSocket.outputStream)
+
+                            val response = recvProtocolMessage()
+                            Log.d(TAG, "error code: ${response?.errorCode}")
                         }
                     }
                 }
@@ -315,12 +397,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val btBroadcastReceiver = object : BroadcastReceiver() {
         @SuppressLint("MissingPermission")
         override fun onReceive(context: Context, intent: Intent) {
-            val action = intent.action
-            when (action) {
+            when (intent.action) {
                 BluetoothDevice.ACTION_FOUND -> {
+                    val pattern = "^GOODIX_.*".toRegex()
                     val device: BluetoothDevice? =
                         intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-                    if (device?.name != null) {
+                    if (device?.name != null && pattern.matches(device.name)) {
                         devList.add(device)
                         val devNameList = arrayListOf<String>()
                         for (dev in devList) {
@@ -340,9 +422,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     val bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.BOND_NONE)
                     val device: BluetoothDevice? =
                         intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-                    val devName = device?.name
                     val result = device?.let {
-                        var state = 0
+                        val state = 0
                         when (bondState) {
                             BluetoothDevice.BOND_BONDED -> {
                                 connectDevice(device)
@@ -352,7 +433,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                                 btnConnect.text = getString(R.string.btn_pairing)
                             }
                             BluetoothDevice.BOND_NONE -> {
-                                showToastInfo("$devName is not bonded")
                                 btnConnect.text = getString(R.string.btn_connect)
                                 btnConnect.isEnabled = true
                             }
@@ -401,7 +481,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                             Manifest.permission.BLUETOOTH_CONNECT
                         ) != PackageManager.PERMISSION_GRANTED
                     ) {
-                        infoText.getText().append("No permission (BLUETOOTH_CONNECT)\n")
+                        infoText.text.append("No permission (BLUETOOTH_CONNECT)\n")
                         ActivityCompat.requestPermissions(
                             this, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 101)
                     }
