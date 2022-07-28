@@ -82,7 +82,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 numBytes = try {
                     mmInStream.read(mmBuffer)
                 } catch (e: IOException) {
-                    Log.d(TAG, "Input stream was disconnected", e)
+                    Log.d(TAG, e.message.toString())
+                    showMsg("${e.message.toString()}")
                     break
                 }
 
@@ -155,6 +156,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         Toast.makeText(this@MainActivity, text, Toast.LENGTH_LONG).show()
     }
 
+    private fun showMsg(text: String) {
+        infoText.text.append("$text\n")
+    }
+
     @SuppressLint("MissingPermission")
     private fun connectDevice(device: BluetoothDevice) {
         btnConnect.text = getString(R.string.btn_connecting)
@@ -162,6 +167,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         mmSocket = device.let {
             val uuid: UUID = UUID.fromString(uuidText.text.toString())
             Log.d(TAG, "Service UUID: $uuid")
+            showMsg("Trying to create connection to $uuid")
             it.createRfcommSocketToServiceRecord(uuid)
         }
 
@@ -169,10 +175,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             mmSocket.connect()
         } catch (e: IOException) {
             Log.d(TAG, e.message.toString())
+            showMsg("${e.message.toString()}")
+            btnConnect.text = getString(R.string.btn_connect)
+            btnConnect.isEnabled = true
+            btnScan.isEnabled = true
+            btnSend.isEnabled = false
+            return
         }
-        Log.d(TAG, "Successfully connect to remote device .")
+        Log.d(TAG, "Create RFCOMM connection successfully.")
+        showMsg("Create RFCOMM connection successfully.")
         btnConnect.text = getString(R.string.btn_disconnect)
-        btnScan.text = getString(R.string.btn_scan)
         btnConnect.isEnabled = true
         btnScan.isEnabled = false
         btnSend.isEnabled = true
@@ -198,6 +210,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             mmSocket.inputStream.read(mmBuffer)
         } catch (e: IOException) {
             Log.d(TAG, e.message.toString())
+//            showMsg(e.message.toString() + '\n')
         }
         Log.d(TAG, "Read $numBytes...")
 
@@ -247,7 +260,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             }
 
             val selectedDevice = devSpinner.selectedItemId.toInt()
-            infoText.text.append("${uuidText.text}\n")
+//            showMsg("${uuidText.text}\n")
 
             // Cancel discovery because it otherwise slows down the connection.
             if (btAdapter.isDiscovering) {
@@ -256,11 +269,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
             when (devList[selectedDevice].bondState) {
                 BluetoothDevice.BOND_BONDED -> {
-                    infoText.text = infoText.text.append("Bonded\n")
+                    showMsg("Paired to ${devList[selectedDevice].name} successfully.")
                     connectDevice(devList[selectedDevice])
                 }
                 BluetoothDevice.BOND_NONE -> {
-                    infoText.text = infoText.text.append("None\n")
+                    showMsg("Paired to ${devList[selectedDevice].name} failed.")
                     devList[selectedDevice].createBond()
                 }
             }
@@ -281,7 +294,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         btnSend.setOnClickListener {
             val selectedProtocol = protocolSpinner.selectedItemId.toInt()
-            Log.d(TAG,"Protocol: " + protocolSpinner.selectedItem.toString())
+            showMsg("Protocol: ${protocolSpinner.selectedItem.toString()}")
             when (selectedProtocol) {
                 0 -> {
                     runBlocking {
@@ -295,7 +308,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                             controlEnvelope.writeTo(mmSocket.outputStream)
 
                             val response = recvProtocolMessage()
-                            Log.d(TAG, "error code: ${response?.errorCode}")
+                            showMsg("Response:\nerror code: ${response?.errorCode.toString()}")
                         }
                     }
                 }
@@ -312,7 +325,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                             controlEnvelope.writeTo(mmSocket.outputStream)
 
                             val response = recvProtocolMessage()
-                            Log.d(TAG, "error code: ${response?.errorCode}")
+                            showMsg("Response\nError code: ${response?.errorCode.toString()}")
                         }
                     }
                 }
@@ -330,7 +343,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                             controlEnvelope.writeTo(mmSocket.outputStream)
 
                             val response = recvProtocolMessage()
-                            Log.d(TAG, "error code: ${response?.errorCode}")
+                            showMsg("Response:\nerror code: ${response?.errorCode.toString()}")
                             try {
                                 if (response?.hasDeviceInformation()!!) {
                                     Log.d(
@@ -345,6 +358,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                                 }
                             } catch (e: NullPointerException) {
                                 Log.e(TAG, e.message.toString())
+                                showMsg("${e.message.toString()}")
                             }
                         }
                     }
@@ -362,7 +376,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                             controlEnvelope.writeTo(mmSocket.outputStream)
 
                             val response = recvProtocolMessage()
-                            Log.d(TAG, "error code: ${response?.errorCode}")
+                            showMsg("Response:\nerror code: ${response?.errorCode.toString()}")
                         }
                     }
                 }
@@ -375,17 +389,17 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         btnSend.isEnabled = false
 
         if (btAdapter.isEnabled) {
-            showToastInfo("BT is on.")
+            showToastInfo("BT is enabled.")
             startDevDiscovery()
         } else {
             val resultLauncher =
                 registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                     if (result.resultCode == Activity.RESULT_OK) {
 //                        val data: Intent? = result.data
-                        showToastInfo("BT is on.")
+                        showToastInfo("BT is enabled.")
                         startDevDiscovery()
                     } else {
-                        showToastInfo("BT is off.")
+                        showToastInfo("BT is disabled.")
                     }
                 }
 
@@ -426,13 +440,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                         val state = 0
                         when (bondState) {
                             BluetoothDevice.BOND_BONDED -> {
+                                showMsg("Paired to ${device.name} successfully.")
                                 connectDevice(device)
                             }
                             BluetoothDevice.BOND_BONDING -> {
+                                showMsg("Trying to pair to ${device.name}.")
                                 disconnectDevice()
+                                btnScan.isEnabled = false
+                                btnScan.text = getString(R.string.btn_scan)
                                 btnConnect.text = getString(R.string.btn_pairing)
                             }
                             BluetoothDevice.BOND_NONE -> {
+                                showMsg("Paired to ${device.name} failed.")
                                 btnConnect.text = getString(R.string.btn_connect)
                                 btnConnect.isEnabled = true
                             }
@@ -474,14 +493,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         when (requestCode) {
             100 -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-//                    btAdapter.startDiscovery()
-                    showToastInfo(permissions[0] + " is granted.")
+                    showToastInfo("${permissions[0]} is granted.")
                     if (ActivityCompat.checkSelfPermission(
                             this,
                             Manifest.permission.BLUETOOTH_CONNECT
                         ) != PackageManager.PERMISSION_GRANTED
                     ) {
-                        infoText.text.append("No permission (BLUETOOTH_CONNECT)\n")
+                        showMsg("No permission (BLUETOOTH_CONNECT)\n")
                         ActivityCompat.requestPermissions(
                             this, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 101)
                     }
@@ -490,7 +508,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             }
             101 -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    showToastInfo(permissions[0] + " is granted.")
+                    showToastInfo("${permissions[0]} is granted.")
                 }
                 return
             }
