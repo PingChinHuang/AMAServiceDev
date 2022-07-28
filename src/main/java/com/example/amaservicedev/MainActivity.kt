@@ -18,7 +18,7 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
-import com.amazon.alexa.accessory.protocol.Accessories
+import com.amazon.alexa.accessory.protocol.Accessories.*
 import com.amazon.alexa.accessory.protocol.Common
 import com.amazon.alexa.accessory.protocol.Device
 import com.amazon.alexa.accessory.protocol.Device.CompleteSetup
@@ -28,7 +28,7 @@ import kotlinx.coroutines.*
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.lang.NullPointerException
+import java.lang.IllegalArgumentException
 import java.util.*
 
 @Suppress("BlockingMethodInNonBlockingContext")
@@ -89,8 +89,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 val buffer = mmBuffer.copyOfRange(0, numBytes)
                 Log.d(mmTAG, dumpByteArray(buffer, buffer.size))
                 try {
-                    val response: Accessories.Response =
-                        Accessories.Response.parseFrom(buffer)
+                    val response: Response =
+                        Response.parseFrom(buffer)
                     Log.d(mmTAG, "Response error code: ${response.errorCode}")
                 } catch (e: InvalidProtocolBufferException) {
                     Log.e(mmTAG, e.stackTraceToString())
@@ -203,7 +203,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
-    private fun recvProtocolMessage(): Accessories.Response? {
+    private fun recvResponse(): Response? {
         val mmBuffer = ByteArray(512)
         val numBytes = try {
             mmSocket.inputStream.read(mmBuffer)
@@ -215,14 +215,110 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         val buffer = mmBuffer.copyOfRange(0, numBytes)
         Log.d(mmTAG, dumpByteArray(buffer, buffer.size))
-        val response: Accessories.Response? = try {
-            Accessories.Response.parseFrom(buffer)
+        val response: Response? = try {
+            Response.parseFrom(buffer)
         } catch (e: InvalidProtocolBufferException) {
             Log.e(mmTAG, e.message.toString())
             null
         }
 
         return response
+    }
+
+    private fun sendCmd(cmd: Command) {
+        val msgBuilder: ControlEnvelope.Builder = ControlEnvelope.newBuilder().setCommand(cmd)
+        val msg: ControlEnvelope
+        try {
+            when (cmd) {
+                Command.NONE -> {
+                    return
+                }
+                Command.RESET_CONNECTION -> {
+                    TODO()
+                }
+                Command.SYNCHRONIZE_SETTINGS -> TODO()
+                Command.KEEP_ALIVE -> TODO()
+                Command.REMOVE_DEVICE -> TODO()
+                Command.GET_LOCALES -> TODO()
+                Command.SET_LOCALE -> TODO()
+                Command.LAUNCH_APP -> TODO()
+                Command.UPGRADE_TRANSPORT -> TODO()
+                Command.SWITCH_TRANSPORT -> TODO()
+                Command.START_SPEECH -> TODO()
+                Command.PROVIDE_SPEECH -> TODO()
+                Command.STOP_SPEECH -> TODO()
+                Command.ENDPOINT_SPEECH -> TODO()
+                Command.NOTIFY_SPEECH_STATE -> TODO()
+                Command.FORWARD_AT_COMMAND -> TODO()
+                Command.INCOMING_CALL -> TODO()
+                Command.GET_CENTRAL_INFORMATION -> TODO()
+                Command.GET_DEVICE_INFORMATION -> {
+                    val getDevInfo: Device.GetDeviceInformation =
+                        Device.GetDeviceInformation.newBuilder()
+                            .setDeviceId(0).build()
+                    msg = msgBuilder.setGetDeviceInformation(getDevInfo).build()
+                }
+                Command.GET_DEVICE_CONFIGURATION -> {
+                    val getDevConfig: Device.GetDeviceConfiguration =
+                        Device.GetDeviceConfiguration.newBuilder().build()
+                    msg = msgBuilder.setGetDeviceConfiguration(getDevConfig).build()
+                }
+                Command.OVERRIDE_ASSISTANT -> TODO()
+                Command.START_SETUP -> {
+                    msg = msgBuilder.setStartSetup(StartSetup.newBuilder().build()).build()
+                }
+                Command.COMPLETE_SETUP -> {
+                    val completeSetup: CompleteSetup = CompleteSetup.newBuilder()
+                        .setErrorCode(Common.ErrorCode.NOT_FOUND)
+                        .build()
+                    msg = msgBuilder.setCompleteSetup(completeSetup).build()
+                }
+                Command.NOTIFY_DEVICE_CONFIGURATION -> TODO()
+                Command.UPDATE_DEVICE_INFORMATION -> TODO()
+                Command.NOTIFY_DEVICE_INFORMATION -> TODO()
+                Command.GET_DEVICE_FEATURES -> TODO()
+                Command.ISSUE_MEDIA_CONTROL -> TODO()
+                Command.GET_STATE -> TODO()
+                Command.SET_STATE -> TODO()
+                Command.SYNCHRONIZE_STATE -> TODO()
+                Command.UNRECOGNIZED -> {
+                    return
+                }
+            }
+        } catch (e: NotImplementedError) {
+            showMsg("Unsupported protocol.")
+            return
+        }
+
+        msg.writeTo(mmSocket.outputStream)
+        val response = recvResponse()
+        showMsg("Response\nError code: ${response?.errorCode.toString()}")
+
+        try {
+            when (response!!.payloadCase) {
+                Response.PayloadCase.LOCALES -> TODO()
+                Response.PayloadCase.CONNECTION_DETAILS -> TODO()
+                Response.PayloadCase.DIALOG -> TODO()
+                Response.PayloadCase.SPEECH_PROVIDER -> TODO()
+                Response.PayloadCase.CENTRAL_INFORMATION -> TODO()
+                Response.PayloadCase.DEVICE_INFORMATION -> {
+                    Log.d(mmTAG,"Got payload: ${response.payloadCase.name}")
+                    showMsg("serial number: ${response.deviceInformation.serialNumber}")
+                    showMsg("name: ${response.deviceInformation.name}")
+                    showMsg("device type: ${response.deviceInformation.deviceType}")
+                }
+                Response.PayloadCase.DEVICE_CONFIGURATION -> TODO()
+                Response.PayloadCase.DEVICE_FEATURES -> TODO()
+                Response.PayloadCase.STATE -> TODO()
+                Response.PayloadCase.PAYLOAD_NOT_SET -> {
+                    return
+                }
+            }
+        } catch (e: NotImplementedError) {
+            showMsg("Payload is not handled.")
+        } catch (e: NullPointerException) {
+            showMsg(e.message.toString())
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
@@ -240,6 +336,26 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         devSpinner = findViewById(R.id.spinnerPairedDev)
         protocolSpinner = findViewById(R.id.spinnerProtocol)
         devList = mutableListOf()
+
+        val protoCmds = arrayListOf<String>()
+        for (cmd in Command.values()) {
+            try {
+                if (cmd.number != 0) {
+                    protoCmds.add(cmd.name)
+                    Log.d(mmTAG, "${Command.valueOf(cmd.name)}")
+                }
+            } catch (e: IllegalArgumentException) {
+                Log.d(mmTAG, e.message.toString())
+            }
+        }
+
+        protocolSpinner.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            protoCmds
+        )
+
+
 
         btnConnect.setOnClickListener {
             btnConnect.isEnabled = false
@@ -292,92 +408,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
 
         btnSend.setOnClickListener {
-            val selectedProtocol = protocolSpinner.selectedItemId.toInt()
             showMsg("Protocol: ${protocolSpinner.selectedItem}")
-            when (selectedProtocol) {
-                0 -> {
-                    runBlocking {
-                        launch {
-                            val startSetup: StartSetup = StartSetup.newBuilder().build()
-                            val controlEnvelope: Accessories.ControlEnvelope =
-                                Accessories.ControlEnvelope.newBuilder()
-                                    .setCommand(Accessories.Command.START_SETUP)
-                                    .setStartSetup(startSetup)
-                                    .build()
-                            controlEnvelope.writeTo(mmSocket.outputStream)
-
-                            val response = recvProtocolMessage()
-                            showMsg("Response:\nerror code: ${response?.errorCode.toString()}")
-                        }
-                    }
-                }
-                1 -> {
-                    runBlocking {
-                        launch {
-                            val completeSetup: CompleteSetup =
-                                CompleteSetup.newBuilder().setErrorCode(Common.ErrorCode.NOT_FOUND).build()
-                            val controlEnvelope: Accessories.ControlEnvelope =
-                                Accessories.ControlEnvelope.newBuilder()
-                                    .setCommand(Accessories.Command.COMPLETE_SETUP)
-                                    .setCompleteSetup(completeSetup)
-                                    .build()
-                            controlEnvelope.writeTo(mmSocket.outputStream)
-
-                            val response = recvProtocolMessage()
-                            showMsg("Response\nError code: ${response?.errorCode.toString()}")
-                        }
-                    }
-                }
-                2 -> {
-                    runBlocking {
-                        launch {
-                            val getDevInfo: Device.GetDeviceInformation =
-                                Device.GetDeviceInformation.newBuilder()
-                                    .setDeviceId(0).build()
-                            val controlEnvelope: Accessories.ControlEnvelope =
-                                Accessories.ControlEnvelope.newBuilder()
-                                    .setCommand(Accessories.Command.GET_DEVICE_INFORMATION)
-                                    .setGetDeviceInformation(getDevInfo)
-                                    .build()
-                            controlEnvelope.writeTo(mmSocket.outputStream)
-
-                            val response = recvProtocolMessage()
-                            showMsg("Response:\nerror code: ${response?.errorCode.toString()}")
-                            try {
-                                if (response?.hasDeviceInformation()!!) {
-                                    Log.d(
-                                        mmTAG,
-                                        "serial number: ${response.deviceInformation.serialNumber}"
-                                    )
-                                    Log.d(mmTAG, "serial number: ${response.deviceInformation.name}")
-                                    Log.d(
-                                        mmTAG,
-                                        "serial number: ${response.deviceInformation.deviceType}"
-                                    )
-                                }
-                            } catch (e: NullPointerException) {
-                                Log.e(mmTAG, e.message.toString())
-                                showMsg(e.message.toString())
-                            }
-                        }
-                    }
-                }
-                3 -> {
-                    runBlocking {
-                        launch {
-                            val getDevConfig: Device.GetDeviceConfiguration =
-                                Device.GetDeviceConfiguration.newBuilder().build()
-                            val controlEnvelope: Accessories.ControlEnvelope =
-                                Accessories.ControlEnvelope.newBuilder()
-                                    .setCommand(Accessories.Command.GET_DEVICE_CONFIGURATION)
-                                    .setGetDeviceConfiguration(getDevConfig)
-                                    .build()
-                            controlEnvelope.writeTo(mmSocket.outputStream)
-
-                            val response = recvProtocolMessage()
-                            showMsg("Response:\nerror code: ${response?.errorCode.toString()}")
-                        }
-                    }
+            runBlocking {
+                launch {
+                    sendCmd(Command.valueOf(protocolSpinner.selectedItem.toString()))
                 }
             }
         }
@@ -394,7 +428,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             val resultLauncher =
                 registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                     if (result.resultCode == Activity.RESULT_OK) {
-//                        val data: Intent? = result.data
                         showToastInfo("BT is enabled.")
                         startDevDiscovery()
                     } else {
