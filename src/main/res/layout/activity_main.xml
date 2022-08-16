@@ -12,27 +12,11 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="@string/service_uuid"
+        app:layout_constraintBottom_toTopOf="@+id/spinnerSvcUuid"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.033"
+        app:layout_constraintHorizontal_bias="0.036"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
-    <EditText
-        android:id="@+id/editTextSvcUuid"
-        android:layout_width="378dp"
-        android:layout_height="50dp"
-        android:ems="10"
-        android:hint="@string/uuid_sample"
-        android:importantForAutofill="no"
-        android:inputType="textPersonName"
-        android:minHeight="64dp"
-        android:text="@string/ama_uuid"
-        android:textColorHint="#757575"
-        android:textSize="12sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.407"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textViewSvcUuid" />
 
     <Button
         android:id="@+id/buttonConnect"
@@ -59,6 +43,8 @@
         android:isScrollContainer="true"
         android:singleLine="false"
         android:textSize="10sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/buttonSend"
         tools:ignore="SpeakableTextPresentCheck" />
@@ -67,20 +53,18 @@
         android:id="@+id/textViewPairedDev"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
         android:text="@string/paired_device"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.036"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextSvcUuid" />
+        app:layout_constraintTop_toBottomOf="@+id/spinnerSvcUuid" />
 
     <Spinner
         android:id="@+id/spinnerPairedDev"
         android:layout_width="378dp"
         android:layout_height="50dp"
-        android:layout_marginStart="12dp"
         android:layout_marginTop="4dp"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/spinnerProtocol"
         app:layout_constraintTop_toBottomOf="@+id/textViewPairedDev"
         tools:ignore="SpeakableTextPresentCheck" />
 
@@ -110,9 +94,8 @@
         android:id="@+id/spinnerProtocol"
         android:layout_width="378dp"
         android:layout_height="50dp"
-        android:layout_marginStart="12dp"
         android:layout_marginTop="8dp"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/editTextMultiLineInfo"
         app:layout_constraintTop_toBottomOf="@+id/textViewProtocol"
         tools:ignore="SpeakableTextPresentCheck" />
 
@@ -126,5 +109,16 @@
         app:layout_constraintHorizontal_bias="0.497"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/spinnerProtocol" />
+
+    <Spinner
+        android:id="@+id/spinnerSvcUuid"
+        android:layout_width="378dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toTopOf="@+id/textViewPairedDev"
+        app:layout_constraintEnd_toEndOf="@+id/spinnerPairedDev"
+        app:layout_constraintTop_toBottomOf="@+id/textViewSvcUuid"
+        tools:ignore="SpeakableTextPresentCheck" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

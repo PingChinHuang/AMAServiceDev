@@ -18,4 +18,8 @@
         <item>Get Device Information</item>
         <item>Get Device Configuration</item>
     </string-array>
+    <string-array name="svc_uuid">
+        <item>931C7E8A-540F-4686-B798-E8DF0A2AD9F7</item>
+        <item>00001101-0000-1000-8000-00805F9B34FB</item>
+    </string-array>
 </resources>

@@ -37,11 +37,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var btnScan: Button
     private lateinit var btnSend: Button
     private lateinit var infoText: EditText
-    private lateinit var uuidText: EditText
+//    private lateinit var uuidText: EditText
     private lateinit var btManager: BluetoothManager
     private lateinit var btAdapter: BluetoothAdapter
     private lateinit var devSpinner: Spinner
     private lateinit var protocolSpinner: Spinner
+    private lateinit var svcSpinner: Spinner
     private lateinit var devList: MutableList<BluetoothDevice>
     private lateinit var transferThread: TransferThread
     private lateinit var mmSocket: BluetoothSocket
@@ -164,7 +165,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         btnConnect.text = getString(R.string.btn_connecting)
 
         mmSocket = device.let {
-            val uuid: UUID = UUID.fromString(uuidText.text.toString())
+            val uuid: UUID = UUID.fromString(svcSpinner.selectedItem.toString())
             Log.d(mmTAG, "Service UUID: $uuid")
             showMsg("Trying to create connection to $uuid")
             it.createRfcommSocketToServiceRecord(uuid)
@@ -330,11 +331,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         btnScan = findViewById(R.id.buttonScan)
         btnSend = findViewById(R.id.buttonSend)
         infoText = findViewById(R.id.editTextMultiLineInfo)
-        uuidText = findViewById(R.id.editTextSvcUuid)
+//        uuidText = findViewById(R.id.editTextSvcUuid)
         btManager = getSystemService(android.bluetooth.BluetoothManager::class.java)
         btAdapter = btManager.adapter
         devSpinner = findViewById(R.id.spinnerPairedDev)
         protocolSpinner = findViewById(R.id.spinnerProtocol)
+        svcSpinner = findViewById(R.id.spinnerSvcUuid)
         devList = mutableListOf()
 
         val protoCmds = arrayListOf<String>()
@@ -353,6 +355,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             this,
             android.R.layout.simple_spinner_dropdown_item,
             protoCmds
+        )
+
+        svcSpinner.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            resources.getStringArray(R.array.svc_uuid)
         )
 
 
