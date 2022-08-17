@@ -12,11 +12,8 @@
     <string name="btn_connecting">Connecting...</string>
     <string name="protocol">Protocol</string>
     <string name="btn_send">Send</string>
-    <string-array name="proto_msg">
-        <item>Start Setup</item>
-        <item>Complete Setup</item>
-        <item>Get Device Information</item>
-        <item>Get Device Configuration</item>
+    <string-array name="spp_proto">
+        <item>PHONE IMU DATA</item>
     </string-array>
     <string-array name="svc_uuid">
         <item>931C7E8A-540F-4686-B798-E8DF0A2AD9F7</item>

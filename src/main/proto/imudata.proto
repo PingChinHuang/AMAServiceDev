@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option java_package = "com.spp.passthrough.protocol";
+option java_generate_equals_and_hash = true;
+option objc_class_prefix = "GASP";
+option optimize_for = LITE_RUNTIME;
+
+message TriAxisData {
+	float x = 1;
+	float y = 2;
+	float z = 3;
+}
+
+message PhoneIMUData {
+	TriAxisData gyro = 1;
+	TriAxisData accelerometer = 2;
+}
+
+message RPCMsg {
+	string dir = 1;
+	string flag = 2;
+	string opcode = 3;
+	string len = 4;
+	PhoneIMUData payload = 5;
+}

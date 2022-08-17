@@ -1,0 +1,4 @@
+RPCMsg.dir max_size:1
+RPCMsg.flag max_size:1
+RPCMsg.opcode max_size:2
+RPCMsg.len max_size:2

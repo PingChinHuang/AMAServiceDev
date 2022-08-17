@@ -23,12 +23,14 @@ import com.amazon.alexa.accessory.protocol.Common
 import com.amazon.alexa.accessory.protocol.Device
 import com.amazon.alexa.accessory.protocol.Device.CompleteSetup
 import com.amazon.alexa.accessory.protocol.Device.StartSetup
+import com.spp.passthrough.protocol.Imudata.*
 import com.google.protobuf.InvalidProtocolBufferException
 import kotlinx.coroutines.*
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.lang.IllegalArgumentException
+import java.nio.ByteBuffer
 import java.util.*
 
 @Suppress("BlockingMethodInNonBlockingContext")
@@ -37,7 +39,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var btnScan: Button
     private lateinit var btnSend: Button
     private lateinit var infoText: EditText
-//    private lateinit var uuidText: EditText
     private lateinit var btManager: BluetoothManager
     private lateinit var btAdapter: BluetoothAdapter
     private lateinit var devSpinner: Spinner
@@ -47,6 +48,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var transferThread: TransferThread
     private lateinit var mmSocket: BluetoothSocket
     private val mmTAG: String = "AMAServiceDev"
+    private val protoCmds = arrayListOf<String>()
 
     private val hexArray = "0123456789ABCDEF".toCharArray()
     private fun dumpByteArray(array: ByteArray, size: Int): String {
@@ -226,7 +228,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         return response
     }
 
-    private fun sendCmd(cmd: Command) {
+    private fun sendAMACmd(cmd: Command) {
         val msgBuilder: ControlEnvelope.Builder = ControlEnvelope.newBuilder().setCommand(cmd)
         val msg: ControlEnvelope
         try {
@@ -314,6 +316,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 Response.PayloadCase.PAYLOAD_NOT_SET -> {
                     return
                 }
+                null -> {
+                    return
+                }
             }
         } catch (e: NotImplementedError) {
             showMsg("Payload is not handled.")
@@ -321,6 +326,40 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             showMsg(e.message.toString())
         }
     }
+
+    private fun sendSPPCmd() {
+        try {
+                when (protocolSpinner.selectedItemId.toInt()) {
+                    0 -> {
+                        val gyro: TriAxisData =
+                            TriAxisData.newBuilder().setX(.1f).setY(.2F).setZ(.3F).build()
+                        val acc: TriAxisData =
+                            TriAxisData.newBuilder().setX(.4F).setY(.5F).setZ(.6F).build()
+                        val payload: PhoneIMUData =
+                            PhoneIMUData.newBuilder().setAccelerometer(acc).setGyro(gyro).build()
+                        val dir: UByte = 0x04u
+                        val flag: UByte = 0xC0u
+//                        showMsg("dir: $dir, flag: $flag, payload size: ${payload.serializedSize}")
+                        var buffer = byteArrayOf(dir.toByte(), flag.toByte())
+                        val func_id: UByte = 0x10u
+                        val cmd_id: UByte = 0x01u
+                        buffer += func_id.toByte()
+                        buffer += cmd_id.toByte()
+                        var tmp: ByteBuffer = ByteBuffer.allocate(2)
+                        tmp.putShort(payload.serializedSize.toShort())
+                        buffer += tmp[1]
+                        buffer += tmp[0]
+                        buffer += payload.toByteArray()
+                        showMsg(dumpByteArray(buffer, 6 + payload.serializedSize.toInt()))
+                        mmSocket.outputStream.write(buffer, 0, 6 + payload.serializedSize.toInt())
+                    }
+                }
+        }  catch (e: NotImplementedError) {
+            showMsg("Unsupported protocol.")
+            return
+        }
+    }
+
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -339,7 +378,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         svcSpinner = findViewById(R.id.spinnerSvcUuid)
         devList = mutableListOf()
 
-        val protoCmds = arrayListOf<String>()
         for (cmd in Command.values()) {
             try {
                 if (cmd.number != 0) {
@@ -362,8 +400,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             android.R.layout.simple_spinner_dropdown_item,
             resources.getStringArray(R.array.svc_uuid)
         )
-
-
 
         btnConnect.setOnClickListener {
             btnConnect.isEnabled = false
@@ -419,8 +455,35 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             showMsg("Protocol: ${protocolSpinner.selectedItem}")
             runBlocking {
                 launch {
-                    sendCmd(Command.valueOf(protocolSpinner.selectedItem.toString()))
+                    if (svcSpinner.selectedItemId.toInt() == 0) {
+                        sendAMACmd(Command.valueOf(protocolSpinner.selectedItem.toString()))
+                    } else {
+                        sendSPPCmd()
+                    }
                 }
+            }
+        }
+
+        svcSpinner.onItemSelectedListener = object: AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                showMsg("Selected: ${svcSpinner.getItemAtPosition(position)}")
+                if (position == 0) {
+                    protocolSpinner.adapter = ArrayAdapter(
+                        this@MainActivity,
+                        android.R.layout.simple_spinner_dropdown_item,
+                        protoCmds
+                    )
+                } else {
+                    protocolSpinner.adapter = ArrayAdapter(
+                        this@MainActivity,
+                        android.R.layout.simple_spinner_dropdown_item,
+                        resources.getStringArray(R.array.spp_proto)
+                    )
+                }
+            }
+
+            override fun onNothingSelected(p0: AdapterView<*>?) {
+                TODO("Not yet implemented")
             }
         }
 
